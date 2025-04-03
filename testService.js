@@ -1,10 +1,10 @@
 const testService = {
-    testInit(url) {      
-        return fetch(`${url}/TestInit`);  
+    testInit(url) {
+        return fetch(`${url}/TestInit`);
     },
 
     getNext(url, index) {
-        return fetch(`${url}/GetNext/${index}`)    
+        return fetch(`${url}/GetNext/${index}`);
     },
 };
 

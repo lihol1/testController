@@ -2,23 +2,24 @@ const nextButton = document.querySelector(".next");
 const textEl = document.querySelector(".text");
 const form = document.querySelector(".form");
 
-import { setTimer, splitStr } from './utils.js';
+import { setTimer, splitStr } from "./utils.js";
 
-function TestController() {};
+function TestController() {}
 
-TestController.prototype ={
+TestController.prototype = {
     totalScore: 0,
     questionIndex: 0,
-    questionList : [],
-    questionCount : 0,
-    serviceUrl : "http://localhost:8089/api/Test",
+    questionList: [],
+    questionCount: 0,
+    serviceUrl: "http://localhost:8089/api/Test",
     timerId: null,
-    addQuestionToList : function (question) {
+    addQuestionToList: function (question) {
         this.questionList.push(question);
         this.questionCount++;
     },
-    checkAnswers : function () {        
-        const { answers, userAnswers } = this.questionList[this.questionIndex - 2]
+    checkAnswers: function () {
+        const { answers, userAnswers } =
+            this.questionList[this.questionIndex - 2];
 
         if (answers.length !== userAnswers.length) return false;
         for (let elem of userAnswers) {
@@ -27,7 +28,7 @@ TestController.prototype ={
         this.totalScore += this.questionList[this.questionIndex - 2].score;
         return true;
     },
-    createNextQuestionObject : function (questionData) {        
+    createNextQuestionObject: function (questionData) {
         const optionsArr = splitStr(questionData.options);
         const answersArr = splitStr(questionData.answers);
 
@@ -37,67 +38,67 @@ TestController.prototype ={
             ...questionData,
             options: optionsArr,
             answers: answersArr,
-        });      
+        });
         return currentQuestion;
     },
-    init : function (question) {     
+    init: function (question) {
         form.innerHTML = "";
         textEl.textContent = question.text;
         question.init();
         nextButton.disabled = true;
         return question;
     },
-    questionFactory: function (length) {   
-        if (length > 1) return new CheckboxQuestion;
-        return new RadioQuestion;
-    } 
-}
+    questionFactory: function (length) {
+        if (length > 1) return new CheckboxQuestion();
+        return new RadioQuestion();
+    },
+};
 
 export const testController = new TestController();
 
-function Question () {};
-Question.prototype ={
+function Question() {}
+Question.prototype = {
     answers: "",
     options: [],
-    score : 5,
-    text : "",
-    userAnswers : [],
-    getScore : ()=> {
+    score: 5,
+    text: "",
+    userAnswers: [],
+    getScore: () => {
         return this.score;
     },
-    handleNext : ()=>{
+    handleNext: () => {
         testController.questionIndex++;
-    }
-}
+    },
+};
 
-function RadioQuestion(){};
-RadioQuestion.prototype = Object.create(Question.prototype)
-RadioQuestion.prototype.init = function() {
+function RadioQuestion() {}
+RadioQuestion.prototype = Object.create(Question.prototype);
+RadioQuestion.prototype.init = function () {
     render(this);
 
     const radioInputs = form.querySelectorAll('input[type="radio"]');
     radioInputs.forEach((input) => {
-        input.addEventListener("change", () => {            
+        input.addEventListener("change", () => {
             function getAnswers(inputs) {
                 const res = Array.from(inputs)
                     .filter((input) => input.checked === true)
                     .map((el) => el.value);
                 return res;
-            }            
-            this.userAnswers = getAnswers(radioInputs);        
+            }
+            this.userAnswers = getAnswers(radioInputs);
             if (!this.userAnswers.length < 1) nextButton.disabled = false;
         });
     });
-}
+};
 
-function CheckboxQuestion(){};
+function CheckboxQuestion() {}
 CheckboxQuestion.prototype = Question.prototype;
-CheckboxQuestion.prototype.init = function() {
+CheckboxQuestion.prototype.init = function () {
     render(this);
 
     const checkboxInputs = form.querySelectorAll('input[type="checkbox"]');
     checkboxInputs.forEach((input) => {
-        input.addEventListener("change", () => {            
+        input.addEventListener("change", () => {
             function getAnswers(inputs) {
                 const res = Array.from(inputs)
                     .filter((input) => input.checked === true)
@@ -121,13 +122,13 @@ export function removeTimer() {
         timerEl?.remove();
     }
 }
-function render(obj) {    
+function render(obj) {
     removeTimer();
     const optionsCount = obj.options.length;
     let optionHTML = "";
     for (let i = 0; i < optionsCount; i++) {
         let innerHTML;
-        if (obj.answers.length > 1) {           
+        if (obj.answers.length > 1) {
             innerHTML = `<div>
                 <input type="checkbox" id="${"option" + i}" name="${
                 "option" + i

@@ -12,8 +12,15 @@ startButton.addEventListener("click", () => {
 
     testService
         .testInit(testController.serviceUrl)
-        .then((response) => {return response.json()})
-        .then(() => testService.getNext(testController.serviceUrl, testController.questionIndex))
+        .then((response) => {
+            return response.json();
+        })
+        .then(() =>
+            testService.getNext(
+                testController.serviceUrl,
+                testController.questionIndex
+            )
+        )
         .then((response) => response.json())
         .then((data) => testController.createNextQuestionObject(data))
         .then((question) => testController.init(question))
@@ -50,7 +57,7 @@ nextButton.addEventListener("click", () => {
                 testController.addQuestionToList(question);
                 testController.questionIndex++;
             })
-            .then(() => testController.checkAnswers())           
+            .then(() => testController.checkAnswers())
             .then(() => testController.totalScore)
             .catch((err) => {
                 removeTimer();
@@ -61,5 +68,3 @@ nextButton.addEventListener("click", () => {
             });
     }
 });
-
-

@@ -1,4 +1,4 @@
-import { testController } from './testController.js';
+import { testController } from "./testController.js";
 const nextButton = document.querySelector(".next");
 
 export function splitStr(prop) {
