@@ -1,12 +1,10 @@
-import { testController } from "./testController.js";
 const testService = {
-    testInit() {      
-        return fetch("http://localhost:8089/api/Test/TestInit");       
+    testInit(url) {      
+        return fetch(`${url}/TestInit`);  
     },
 
-    getNext() {
-           const index = testController.questionIndex
-           return fetch(`http://localhost:8089/api/Test/GetNext/${index}`)       
+    getNext(url, index) {
+        return fetch(`${url}/GetNext/${index}`)    
     },
 };
 

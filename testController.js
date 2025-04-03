@@ -1,30 +1,24 @@
-const startButton = document.querySelector("#start");
-const nextButton = document.querySelector("#next");
-const questionField = document.querySelector(".question");
+const nextButton = document.querySelector(".next");
 const textEl = document.querySelector(".text");
-const answerEl = document.querySelector(".answer");
-const questionBlock = document.querySelector(".questionBlock");
 const form = document.querySelector(".form");
 
-let timerId;
-export const testController = new TestController();
+import { setTimer, splitStr } from './utils.js';
 
-function TestController() {
-    this.totalScore = 0;
-    this.questionCount = 0;
-    this.questionIndex = 0;
-    this.questionList = [];
-    (this.serviceUrl = "http://localhost:8089/api/Test/"),
-        (this.showResult = function () {
-            return this.totalScore;
-        });
-    this.addQuestionToList = function (question) {
+function TestController() {};
+
+TestController.prototype ={
+    totalScore: 0,
+    questionIndex: 0,
+    questionList : [],
+    questionCount : 0,
+    serviceUrl : "http://localhost:8089/api/Test",
+    timerId: null,
+    addQuestionToList : function (question) {
         this.questionList.push(question);
         this.questionCount++;
-    };
-    this.checkAnswers = function () {
-        const answers = this.questionList[this.questionIndex - 2].answers;
-        let userAnswers = this.questionList[this.questionIndex - 2].userAnswers;
+    },
+    checkAnswers : function () {        
+        const { answers, userAnswers } = this.questionList[this.questionIndex - 2]
 
         if (answers.length !== userAnswers.length) return false;
         for (let elem of userAnswers) {
@@ -32,133 +26,108 @@ function TestController() {
         }
         this.totalScore += this.questionList[this.questionIndex - 2].score;
         return true;
-    };
-
-    this.createNextQuestionObject = function (obj) {
-        const optionsArr = splitStr(obj.options);
-        const answersArr = splitStr(obj.answers);
+    },
+    createNextQuestionObject : function (questionData) {        
+        const optionsArr = splitStr(questionData.options);
+        const answersArr = splitStr(questionData.answers);
 
         let currentQuestion = this.questionFactory(answersArr.length);
 
         currentQuestion = Object.assign(currentQuestion, {
-            ...obj,
+            ...questionData,
             options: optionsArr,
             answers: answersArr,
-        });
+        });      
         return currentQuestion;
-    };
-
-    this.init = function (question) {
+    },
+    init : function (question) {     
         form.innerHTML = "";
         textEl.textContent = question.text;
         question.init();
         nextButton.disabled = true;
         return question;
-    };
-    this.questionFactory = function (length) {
-        if (length > 1) return Object.create(checkboxQuestion);
-        return Object.create(radioQuestion);
-    };
+    },
+    questionFactory: function (length) {   
+        if (length > 1) return new CheckboxQuestion;
+        return new RadioQuestion;
+    } 
 }
 
-const question = {
+export const testController = new TestController();
+
+function Question () {};
+Question.prototype ={
     answers: "",
     options: [],
-    score: 5,
-    text: "",
-    userAnswers: [],
-    getScore() {
+    score : 5,
+    text : "",
+    userAnswers : [],
+    getScore : ()=> {
         return this.score;
     },
-    handleNext() {
+    handleNext : ()=>{
         testController.questionIndex++;
-    },
-};
-
-const radioQuestion = {
-    init() {
-        render(this);
-
-        const radioInputs = form.querySelectorAll('input[type="radio"]');
-        radioInputs.forEach((input) => {
-            input.addEventListener("change", () => {
-                this.userAnswers = getAnswers(radioInputs);  
-                if (!this.userAnswers.length < 1) nextButton.disabled = false;
-            });
-        });
-    },
-    handleNext() {
-        super.handleNext();
-    },
-};
-
-const checkboxQuestion = {
-    init() {
-        render(this);
-
-        const checkboxInputs = form.querySelectorAll('input[type="checkbox"]');
-        checkboxInputs.forEach((input) => {
-            input.addEventListener("change", () => {
-                this.userAnswers = getAnswers(checkboxInputs);
-                if (this.userAnswers.length < 1) {
-                    nextButton.disabled = true;
-                } else {
-                    nextButton.disabled = false;
-                }
-            });
-        });
-    },
-    handleNext() {
-        super.handleNext();
-    },
-};
-
-Object.setPrototypeOf(radioQuestion, question);
-Object.setPrototypeOf(checkboxQuestion, question);
-
-function splitStr(prop) {
-    const arr = prop.split("#;");
-    if (arr[arr.length - 1] === "") {
-        arr.pop();
     }
-    return arr.map((el) => el.replaceAll('"', "'"));
 }
 
-function getAnswers(inputs) {
-    const res = Array.from(inputs)
-        .filter((input) => input.checked === true)
-        .map((el) => el.value);
-    return res;
+function RadioQuestion(){};
+RadioQuestion.prototype = Object.create(Question.prototype)
+RadioQuestion.prototype.init = function() {
+    render(this);
+
+    const radioInputs = form.querySelectorAll('input[type="radio"]');
+    radioInputs.forEach((input) => {
+        input.addEventListener("change", () => {            
+            function getAnswers(inputs) {
+                const res = Array.from(inputs)
+                    .filter((input) => input.checked === true)
+                    .map((el) => el.value);
+                return res;
+            }            
+            this.userAnswers = getAnswers(radioInputs);        
+            if (!this.userAnswers.length < 1) nextButton.disabled = false;
+        });
+    });
 }
 
-function setTimer(counter, timerEl) {
-    return (timerId = setInterval(() => {
-        if (counter > 0) {
-            counter--;
-            timerEl.textContent = `Таймер: осталось ${counter} с.`;
-        } else {
-            clearInterval(timerId);
-            timerEl.remove();
-            nextButton.dispatchEvent(new MouseEvent("click"));
-        }
-    }, 1000));
-}
+function CheckboxQuestion(){};
+CheckboxQuestion.prototype = Question.prototype;
+CheckboxQuestion.prototype.init = function() {
+    render(this);
+
+    const checkboxInputs = form.querySelectorAll('input[type="checkbox"]');
+    checkboxInputs.forEach((input) => {
+        input.addEventListener("change", () => {            
+            function getAnswers(inputs) {
+                const res = Array.from(inputs)
+                    .filter((input) => input.checked === true)
+                    .map((el) => el.value);
+                return res;
+            }
+            this.userAnswers = getAnswers(checkboxInputs);
+            if (this.userAnswers.length < 1) {
+                nextButton.disabled = true;
+            } else {
+                nextButton.disabled = false;
+            }
+        });
+    });
+};
 
 export function removeTimer() {
-    if (timerId) {
-        clearInterval(timerId);
+    if (testController.timerId) {
+        clearInterval(testController.timerId);
         const timerEl = document.querySelector(".timer");
         timerEl?.remove();
     }
 }
-function render(obj) {
+function render(obj) {    
     removeTimer();
-    const length = obj.options.length;
+    const optionsCount = obj.options.length;
     let optionHTML = "";
-    for (let i = 0; i < length; i++) {
+    for (let i = 0; i < optionsCount; i++) {
         let innerHTML;
-        if (obj.answers.length > 1) {
-            // для checkbox
+        if (obj.answers.length > 1) {           
             innerHTML = `<div>
                 <input type="checkbox" id="${"option" + i}" name="${
                 "option" + i
