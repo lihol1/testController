@@ -1,10 +1,16 @@
 import testService from "./testService.js";
-import { testController, removeTimer } from "./testController.js";
+import { testController } from "./testController.js";
+import {
+    removeTimer,
+    removeCounter,
+    timerId,
+    formErrorMessage,
+} from "./utils.js";
 
-const startButton = document.querySelector(".start");
-const nextButton = document.querySelector(".next");
-const textEl = document.querySelector(".text");
-const form = document.querySelector(".form");
+const startButton = document.querySelector(".questionBlock__start");
+const nextButton = document.querySelector(".questionBlock__next");
+const textEl = document.querySelector(".questionBlock__text");
+const form = document.querySelector(".questionBlock__form");
 
 startButton.addEventListener("click", () => {
     testController.questionIndex = 0;
@@ -31,7 +37,8 @@ startButton.addEventListener("click", () => {
         .catch((err) => {
             console.log(err);
             form.innerHTML = "";
-            textEl.textContent = `${err}`;
+            textEl.textContent = "";
+            form.append(formErrorMessage(err));
         });
 });
 
@@ -60,11 +67,12 @@ nextButton.addEventListener("click", () => {
             .then(() => testController.checkAnswers())
             .then(() => testController.totalScore)
             .catch((err) => {
-                removeTimer();
+                removeTimer(timerId);
+                removeCounter();
                 console.log(err);
                 form.innerHTML = "";
-                textEl.style.color = "red";
-                textEl.textContent = `${err}`;
+                textEl.innerHTML = "";
+                form.append(formErrorMessage(err));
             });
     }
 });
