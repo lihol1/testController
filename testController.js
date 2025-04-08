@@ -1,7 +1,13 @@
 import { nextButton, textEl, form, index } from "./ui.js";
 import RadioQuestion from "./RadioQuestion.js";
 import CheckboxQuestion from "./CheckboxQuestion.js";
-import { splitStr } from "./utils.js";
+import {
+    splitStr,
+    timerId,
+    removeTimer,
+    removeCounter,
+    formErrorMessage,
+} from "./utils.js";
 
 function TestController() {
     this.totalScore = 0;
@@ -15,16 +21,27 @@ TestController.prototype = {
     init: function () {
         this.questionIndex = 0;
         textEl.style.color = "black";
-        return new Promise((resolve) => {
-            resolve(this.ajaxToService(`${this.serviceUrl}/TestInit`));
-        });
+        this.ajaxToService(`${this.serviceUrl}/TestInit`).then((data) =>
+            this.createNextQuestionObject(data)
+        );
     },
     ajaxToService: async function (url) {
-        const response = await fetch(url);
-        if (!response.ok) {
-            throw new Error(`${response.statusText}`);
+        try {
+            const response = await fetch(url);
+            if (!response.ok) {
+                throw new Error(`${response.statusText}`);
+            }
+            return response.json();
+        } catch (err) {
+            if (timerId) {
+                removeTimer(timerId);
+                removeCounter();
+            }
+            console.log(err);
+            form.innerHTML = "";
+            textEl.innerHTML = "";
+            form.append(formErrorMessage(err));
         }
-        return response.json();
     },
     loadQuestion: async function () {
         const data = await this.ajaxToService(
@@ -48,33 +65,48 @@ TestController.prototype = {
         this.totalScore += this.questionList[this.questionIndex - 2].score;
         return true;
     },
-    createNextQuestionObject: function (questionData) {
-        if (questionData) {
-            const optionsArr = splitStr(questionData.options);
-            const answersArr = splitStr(questionData.answers);
+    createNextQuestionObject: function () {
+        if (this.questionIndex == 10) {
+            if (timerId) {
+                removeTimer(timerId);
+                removeCounter();
+            }
+            this.checkAnswers();
+            form.innerHTML = "";
+            index.innerHTML = "";
+            textEl.textContent = `Опрос окончен. Ваши баллы: ${this.totalScore}`;
+            nextButton.disabled = true;
+        } else {
+            this.loadQuestion().then((questionData) => {
+                if (questionData) {
+                    questionData.options = splitStr(questionData.options);
+                    questionData.answers = splitStr(questionData.answers);
 
-            let currentQuestion = this.questionFactory(answersArr.length);
-
-            currentQuestion = Object.assign(currentQuestion, {
-                ...questionData,
-                options: optionsArr,
-                answers: answersArr,
+                    let currentQuestion = this.questionFactory(
+                        questionData.answers.length,
+                        questionData
+                    );
+                    this.showResult(currentQuestion);
+                    this.addQuestionToList(currentQuestion);
+                    this.questionIndex++;
+                    if (this.questionIndex > 1) {
+                        this.checkAnswers();
+                        this.totalScore;
+                    }
+                }
             });
-            return currentQuestion;
         }
     },
-    questionFactory: function (length) {
-        if (length > 1) return new CheckboxQuestion();
-        return new RadioQuestion();
+    questionFactory: function (length, data) {
+        if (length > 1) return new CheckboxQuestion(data);
+        return new RadioQuestion(data);
     },
     showResult: function (question) {
         form.innerHTML = "";
         textEl.textContent = question.text;
-        console.log(index)
-        index.textContent = `${this.questionIndex + 1}/10`
+        index.textContent = `${this.questionIndex + 1}/10`;
         question.init();
         nextButton.disabled = true;
-        return question;
     },
 };
 

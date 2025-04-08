@@ -1,9 +1,9 @@
-import Question from './Question.js';
-import { render, getAnswers } from './utils.js';
-import { nextButton, form} from './ui.js';
+import Question from "./Question.js";
+import { getAnswers } from "./utils.js";
+import { nextButton, form, render } from "./ui.js";
 
-function CheckboxQuestion() {
-    Question.call(this);
+function CheckboxQuestion(data) {
+    Question.call(this, data);
     this.init = function () {
         render(this);
 

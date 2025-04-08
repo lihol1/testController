@@ -1,9 +1,9 @@
-import Question from './Question.js';
-import { render, getAnswers } from './utils.js';
-import { nextButton, form} from './ui.js';
+import Question from "./Question.js";
+import { getAnswers } from "./utils.js";
+import { nextButton, form, render } from "./ui.js";
 
-function RadioQuestion() {
-    Question.call(this);
+function RadioQuestion(data) {
+    Question.call(this, data);
     this.init = function () {
         render(this);
         const radioInputs = form.querySelectorAll('input[type="radio"]');

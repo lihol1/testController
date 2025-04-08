@@ -1,5 +1,10 @@
 import { startButton, nextButton } from "./ui.js";
-import { testInit, getNext } from "./controller.js";
+import TestController from "./TestController.js";
 
-startButton.addEventListener("click", testInit);
-nextButton.addEventListener("click", getNext);
+const testController = new TestController();
+
+startButton.addEventListener("click", testController.init.bind(testController));
+nextButton.addEventListener(
+    "click",
+    testController.createNextQuestionObject.bind(testController)
+);
