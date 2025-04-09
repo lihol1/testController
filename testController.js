@@ -37,17 +37,15 @@ TestController.prototype = {
                 removeTimer(timerId);
                 removeCounter();
             }
-            console.log(err);
             form.innerHTML = "";
             textEl.innerHTML = "";
             form.append(formErrorMessage(err));
         }
     },
-    loadQuestion: async function () {
-        const data = await this.ajaxToService(
+    loadQuestion: function () {
+        return this.ajaxToService(
             `${this.serviceUrl}/GetNext/${this.questionIndex}`
         );
-        return data;
     },
     addQuestionToList: function (question) {
         this.questionList.push(question);
