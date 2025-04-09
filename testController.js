@@ -1,13 +1,12 @@
-const nextButton = document.querySelector(".questionBlock__next");
-const textEl = document.querySelector(".questionBlock__text");
-const form = document.querySelector(".questionBlock__form");
-
+import { nextButton, textEl, form, index } from "./ui.js";
+import RadioQuestion from "./RadioQuestion.js";
+import CheckboxQuestion from "./CheckboxQuestion.js";
 import {
-    setTimer,
     splitStr,
+    timerId,
     removeTimer,
     removeCounter,
-    timerId,
+    formErrorMessage,
 } from "./utils.js";
 
 function TestController() {
@@ -15,10 +14,39 @@ function TestController() {
     this.questionIndex = 0;
     this.questionList = [];
     this.questionCount = 0;
-    this.serviceUrl = "http://localhost:8089/api/Test";   
+    this.serviceUrl = "http://localhost:8089/api/Test";
 }
 
 TestController.prototype = {
+    init: function () {
+        this.questionIndex = 0;
+        textEl.style.color = "black";
+        this.ajaxToService(`${this.serviceUrl}/TestInit`).then((data) =>
+            this.createNextQuestionObject(data)
+        );
+    },
+    ajaxToService: async function (url) {
+        try {
+            const response = await fetch(url);
+            if (!response.ok) {
+                throw new Error(`${response.statusText}`);
+            }
+            return response.json();
+        } catch (err) {
+            if (timerId) {
+                removeTimer(timerId);
+                removeCounter();
+            }
+            form.innerHTML = "";
+            textEl.innerHTML = "";
+            form.append(formErrorMessage(err));
+        }
+    },
+    loadQuestion: function () {
+        return this.ajaxToService(
+            `${this.serviceUrl}/GetNext/${this.questionIndex}`
+        );
+    },
     addQuestionToList: function (question) {
         this.questionList.push(question);
         this.questionCount++;
@@ -26,140 +54,58 @@ TestController.prototype = {
     checkAnswers: function () {
         const { answers, userAnswers } =
             this.questionList[this.questionIndex - 2];
-        
+
         if (!answers || !userAnswers) return;
         if (answers.length !== userAnswers.length) return false;
         for (let elem of userAnswers) {
             if (!answers.includes(elem)) return false;
         }
-        console.log(this.totalScore)
-        console.log(this.questionList[this.questionIndex - 2].score)
         this.totalScore += this.questionList[this.questionIndex - 2].score;
-        console.log(this.totalScore)
         return true;
     },
-    createNextQuestionObject: function (questionData) {
-        const optionsArr = splitStr(questionData.options);
-        const answersArr = splitStr(questionData.answers);
+    createNextQuestionObject: function () {
+        if (this.questionIndex == 10) {
+            if (timerId) {
+                removeTimer(timerId);
+                removeCounter();
+            }
+            this.checkAnswers();
+            form.innerHTML = "";
+            index.innerHTML = "";
+            textEl.textContent = `Опрос окончен. Ваши баллы: ${this.totalScore}`;
+            nextButton.disabled = true;
+        } else {
+            this.loadQuestion().then((questionData) => {
+                if (questionData) {
+                    questionData.options = splitStr(questionData.options);
+                    questionData.answers = splitStr(questionData.answers);
 
-        let currentQuestion = this.questionFactory(answersArr.length);
-
-        currentQuestion = Object.assign(currentQuestion, {
-            ...questionData,
-            options: optionsArr,
-            answers: answersArr,
-        });
-        return currentQuestion;
-    },
-    init: function (question) {
-        form.innerHTML = "";
-        textEl.textContent = question.text;
-        question.init();
-        nextButton.disabled = true;
-        return question;
-    },
-    questionFactory: function (length) {
-        if (length > 1) return new CheckboxQuestion();
-        return new RadioQuestion();
-    },
-};
-
-export const testController = new TestController();
-
-function Question() {
-    this.answers = "",
-    this.options = [],
-    this.score = 5,
-    this.text = "",
-    this.userAnswers = [];
-}
-Question.prototype = {
-    getScore: () => {
-        return this.score;
-    },
-    handleNext: () => {
-        testController.questionIndex++;
-    },
-};
-
-function RadioQuestion() {
-    Question.call(this);
-    this.init = function () {   
-        render(this);
-        const radioInputs = form.querySelectorAll('input[type="radio"]');
-        radioInputs.forEach((input) => {
-            input.addEventListener("change", () => {
-                this.userAnswers = getAnswers(radioInputs);
-                if (!this.userAnswers.length < 1) nextButton.disabled = false;
-            });
-        });
-    };
-   
-};
-
-function CheckboxQuestion() {
-    Question.call(this);
-    this.init = function () {
-        render(this);
-    
-        const checkboxInputs = form.querySelectorAll('input[type="checkbox"]');
-        checkboxInputs.forEach((input) => {
-            input.addEventListener("change", () => {
-                this.userAnswers = getAnswers(checkboxInputs);
-                if (this.userAnswers.length < 1) {
-                    nextButton.disabled = true;
-                } else {
-                    nextButton.disabled = false;
+                    let currentQuestion = this.questionFactory(
+                        questionData.answers.length,
+                        questionData
+                    );
+                    this.showResult(currentQuestion);
+                    this.addQuestionToList(currentQuestion);
+                    this.questionIndex++;
+                    if (this.questionIndex > 1) {
+                        this.checkAnswers();
+                        this.totalScore;
+                    }
                 }
             });
-        });
-    };
-}
-
-
-function getAnswers(inputs) {
-    const res = Array.from(inputs)
-        .filter((input) => input.checked === true)
-        .map((el) => el.value);
-    return res;
-}
-
-function render(obj) {
-    removeTimer(timerId);
-    removeCounter();
-    const optionsCount = obj.options.length;
-    let optionHTML = "";
-    for (let i = 0; i < optionsCount; i++) {
-        let innerHTML;
-        if (obj.answers.length > 1) {
-            innerHTML = `<div>
-                <input type="checkbox" id="${"option" + i}" name="${
-                "option" + i
-            }" value=\"${obj.options[i]}\"  />
-                <label for="${"option" + i}">${obj.options[i]}</label>
-            </div>`;
-        } else {
-            innerHTML = `<div>
-                <input type="radio" id="${"option" + i}" name="${
-                "option" + obj.id
-            }" value=\"${obj.options[i]}\"   />
-                <label for="${"option" + i}">${obj.options[i]}</label>
-            </div>`;
         }
-        optionHTML += innerHTML;
-    }
-    form.innerHTML = optionHTML;
+    },
+    questionFactory: function (length, data) {
+        if (length > 1) return new CheckboxQuestion(data);
+        return new RadioQuestion(data);
+    },
+    showResult: function (question) {
+        form.innerHTML = "";
+        textEl.textContent = question.text;
+        index.textContent = `${this.questionIndex + 1}/10`;
+        question.init();
+        nextButton.disabled = true;
+    },
+};
 
-    if (obj.timeout > 0) {
-        const timerEl = document.createElement("p");
-        timerEl.classList.add("timer");
-        form.insertAdjacentElement("afterend", timerEl);
-        timerEl.textContent = `Таймер: осталось ${obj.timeout} с.`;
-
-        setTimer(obj.timeout).then(() => {
-            nextButton.dispatchEvent(new MouseEvent("click"));
-        });
-        // setTimer(obj.timeout, () => {}, () =>{});
-    }
-}
-
+export default TestController;

@@ -8,6 +8,13 @@ export function splitStr(str) {
     return arr.map((el) => el.replaceAll('"', "'"));
 }
 
+export function getAnswers(inputs) {
+    const res = Array.from(inputs)
+        .filter((input) => input.checked === true)
+        .map((el) => el.value);
+    return res;
+}
+
 export function setTimer(counter) {
     return new Promise((resolve) => {
         timerId = setInterval(() => {
@@ -25,19 +32,22 @@ export function setTimer(counter) {
 
 export function changeCounter(counter) {
     const timerEl = document.querySelector(".timer");
-    timerEl.textContent = `Таймер: осталось ${counter} с.`;
+    if (timerEl) {
+        timerEl.textContent = `Таймер: осталось ${counter} с.`;
+    }
 }
 export function removeCounter() {
     const timerEl = document.querySelector(".timer");
     timerEl?.remove();
 }
+
 export function removeTimer(timerId) {
     clearInterval(timerId);
 }
 
-export function formErrorMessage (text){
-    const errorEl = document.createElement('p')
+export function formErrorMessage(text) {
+    const errorEl = document.createElement("p");
     errorEl.style.color = "red";
-    errorEl.textContent = `${text}`;    
+    errorEl.textContent = `${text}`;
     return errorEl;
 }
